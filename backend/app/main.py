@@ -114,6 +114,8 @@ def chat(body: SimpleChatRequest):
         code = body.get("code") if isinstance(body, dict) else None
         if code in ("insufficient_quota", "credit_balance_exhausted"):
             raise HTTPException(503, "AI service unavailable: the AI account has no credits or quota left")
+        if getattr(e, "status_code", None) == 503 or type(e).__name__ == "APITimeoutError":
+            raise HTTPException(503, "AI service is busy right now, please try again")
         raise HTTPException(502, f"AI service error: {type(e).__name__}")
 
 

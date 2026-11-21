@@ -87,7 +87,7 @@ def chat(store: Store, student_id: str, message: str, history: list[dict], langu
 
     from openai import OpenAI  # imported lazily so tests never need it
 
-    client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+    client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL, timeout=30, max_retries=1)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT.format(language_rule=LANGUAGE_RULES.get(language, LANGUAGE_RULES["auto"]))},
         {"role": "system", "content": "STUDENT CONTEXT:\n" + json.dumps(context, ensure_ascii=False)},

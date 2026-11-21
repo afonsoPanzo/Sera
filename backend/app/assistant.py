@@ -133,7 +133,7 @@ def answer(message: str, language: str, topic: Topic, history: list[dict],
 
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = OpenAI(api_key=api_key, base_url=base_url, timeout=30, max_retries=1)
     messages = [{"role": "system", "content": build_system_prompt(lang, topic)},
                 *history[-MAX_HISTORY:],
                 {"role": "user", "content": message}]

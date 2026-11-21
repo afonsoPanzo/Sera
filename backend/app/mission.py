@@ -164,8 +164,9 @@ def chat_triage(body: TriageRequest):
     else:
         noted = f"I have noted your symptoms ({symptoms})"
         noted += f" and your {allergies} allergy." if r["allergies"] else "."
-        question = (f"{noted} Should I call the campus doctor in Hungarian to book an appointment "
-                    f"and send an official absence email to your lecturer for {course}?")
+        email_part = (f" and send an official absence email to your lecturer for {course}"
+                      if email_configured() else "")
+        question = f"{noted} Should I call the campus doctor in Hungarian to book an appointment{email_part}?"
 
     result = {"student_name": student, "course_name": course, "symptoms": symptoms, "symptoms_hu": symptoms_hu,
               "allergies": allergies, "allergies_hu": allergies_hu, "misses_class": r["misses_class"],
@@ -182,7 +183,7 @@ def chat_triage(body: TriageRequest):
 class ConfirmRequest(BaseModel):
     doctor_phone: str = Field(..., description="E.164, e.g. +36301234567")
     student_phone: Optional[str] = None
-    lecturer_email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    lecturer_email: Optional[str] = Field(None, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     student_name: str = DEFAULT_STUDENT
     course_name: str = DEFAULT_COURSE
     symptoms: str = Field(..., min_length=2, max_length=300)
@@ -350,6 +351,10 @@ Sent with the student's permission by StudentMate Agent.
     return msg
 
 
+def email_configured() -> bool:
+    return bool(env("SMTP_EMAIL") and env("SMTP_APP_PASSWORD"))
+
+
 def send_email(msg: EmailMessage) -> None:
     user, password = env("SMTP_EMAIL"), env("SMTP_APP_PASSWORD").replace(" ", "")
     if not user or not password:
@@ -364,24 +369,28 @@ def send_email(msg: EmailMessage) -> None:
 async def complete_mission(payload: dict, source_label: str) -> None:
     appt, source, excerpt = extract_appointment(payload)
     confirmed = source != "fallback"
-    mission.update(f"Call finished ({source_label}). Appointment: {appt} [{source}]. Emailing the lecturer…",
+    if source_label == "simulated" and confirmed:
+        source, excerpt = "manual", None  # typed on the fallback screen, not heard in a call
+    mission.update(f"Call finished ({source_label}). Appointment: {appt} [{source}].",
                    status="SENDING_EMAIL", appointment_time=appt, appointment_time_source=source,
                    transcript_excerpt=excerpt)
     snap = mission.snapshot()
     to = snap["contacts"].get("lecturer_email")
-    if not to:
-        mission.update("No lecturer email on file: email not sent.", status="COMPLETED",
-                       email={"status": "failed", "error": "no lecturer_email"})
-        return
-    try:
-        msg = build_email(snap["student"], snap["contacts"], appt, confirmed)
-        await asyncio.to_thread(send_email, msg)
-        mission.update(f"Email sent to {to}.", email={"status": "sent", "to": to,
-                                                      "sent_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                                      "subject": msg["Subject"], "error": None})
-    except Exception as e:  # never report a failed email as sent
-        mission.update(f"Email FAILED: {type(e).__name__}: {str(e)[:200]}",
-                       email={"status": "failed", "error": f"{type(e).__name__}: {str(e)[:200]}"})
+    if not email_configured():
+        mission.update("Lecturer email is switched off (no SMTP settings): skipped.",
+                       email={"status": "skipped", "error": None})
+    elif not to:
+        mission.update("No lecturer email given: email skipped.", email={"status": "skipped", "error": None})
+    else:
+        try:
+            msg = build_email(snap["student"], snap["contacts"], appt, confirmed)
+            await asyncio.to_thread(send_email, msg)
+            mission.update(f"Email sent to {to}.", email={"status": "sent", "to": to,
+                                                          "sent_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                                          "subject": msg["Subject"], "error": None})
+        except Exception as e:  # never report a failed email as sent
+            mission.update(f"Email FAILED: {type(e).__name__}: {str(e)[:200]}",
+                           email={"status": "failed", "error": f"{type(e).__name__}: {str(e)[:200]}"})
 
     student_phone = snap["contacts"].get("student_phone")
     confirm_agent = env("ELEVENLABS_STUDENT_AGENT_ID")
@@ -450,8 +459,6 @@ async def simulate_call_complete(body: SimulateRequest):
     if body.student_name or body.course_name:
         mission.update(student={k: v for k, v in {"student_name": body.student_name,
                                                   "course_name": body.course_name}.items() if v})
-    if not mission.snapshot()["contacts"].get("lecturer_email"):
-        raise HTTPException(422, "No lecturer_email yet: send it here or run /api/confirm-and-execute first")
     msg = f"Az időpont rendben, ma {body.appointment_time} órakor várjuk." if body.appointment_time else ""
     payload = {"type": "post_call_transcription", "data": {"transcript": [{"role": "user", "message": msg}] if msg else []}}
     await complete_mission(payload, "simulated")

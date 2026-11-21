@@ -11,6 +11,8 @@ import type {
   Topic,
   SeraChatReply,
   ExplainResponse,
+  TriageResult,
+  MissionLive,
 } from './types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -109,6 +111,16 @@ export const endpoints = {
     form.append('language', input.language);
     return upload<ExplainResponse>('/api/explain', form);
   },
+  // Live demo mission
+  triage: (message: string) => post<TriageResult>('/api/chat-triage', { message }),
+  confirmAndExecute: (body: {
+    doctor_phone: string; student_phone?: string; lecturer_email?: string; student_name: string;
+    course_name: string; symptoms: string; allergies: string; preferred_window: string;
+  }) => post<{ status: string; conversation_id: string | null }>('/api/confirm-and-execute', body),
+  missionStatus: () => get<MissionLive>('/api/mission-status'),
+  simulateCallComplete: (appointment_time?: string) =>
+    post<MissionLive>('/api/simulate-call-complete', appointment_time ? { appointment_time } : {}),
+  missionReset: () => post<MissionLive>('/api/mission-reset', {}),
   speak: async (text: string, language: 'en' | 'hu'): Promise<Blob> => {
     let response: Response;
     try {

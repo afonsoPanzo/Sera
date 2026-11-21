@@ -174,8 +174,21 @@ def test_simulate_without_call(client, sent):
     assert r.status_code == 200
     s = r.json()
     assert s["status"] == "COMPLETED" and s["appointment_time"] == "14:30 CET" and s["email"]["status"] == "sent"
+    assert s["appointment_time_source"] == "manual"
     assert client.post("/api/mission-reset").json()["status"] == "IDLE"
-    assert client.post("/api/simulate-call-complete", json={}).status_code == 422
+
+
+def test_email_switched_off_still_completes(client, fake_call, sent, monkeypatch):
+    monkeypatch.delenv("SMTP_EMAIL")
+    body = confirm_body()
+    body.pop("lecturer_email")
+    assert client.post("/api/confirm-and-execute", json=body).status_code == 200
+    client.post("/api/elevenlabs-webhook", json=webhook_payload("Ma 15:00-kor várjuk."))
+    s = client.get("/api/mission-status").json()
+    assert s["status"] == "COMPLETED" and s["appointment_time"] == "15:00 CET"
+    assert s["email"]["status"] == "skipped" and not sent
+    r = client.post("/api/simulate-call-complete", json={"appointment_time": "16:00"})
+    assert r.status_code == 200
 
 
 @pytest.mark.parametrize("text,expected", [

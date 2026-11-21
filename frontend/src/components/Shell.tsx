@@ -8,15 +8,17 @@ import {
   FileText,
   LayoutDashboard,
   MessageCircle,
+  PhoneCall,
   RefreshCw,
   ShieldAlert,
   Sparkles,
 } from 'lucide-react';
 import logoWhite from '../assets/sera-logo-white.png';
 
-export type PageKey = 'dashboard' | 'documents' | 'missions' | 'risks' | 'approvals' | 'assistant';
+export type PageKey = 'live' | 'dashboard' | 'documents' | 'missions' | 'risks' | 'approvals' | 'assistant';
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: typeof LayoutDashboard; group: string }[] = [
+  { key: 'live', label: 'Live demo', icon: PhoneCall, group: 'Workspace' },
   { key: 'dashboard', label: 'Overview', icon: LayoutDashboard, group: 'Workspace' },
   { key: 'documents', label: 'My documents', icon: FileText, group: 'Workspace' },
   { key: 'missions', label: 'Missions', icon: CheckSquare, group: 'Workspace' },
@@ -26,6 +28,7 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: typeof LayoutDashboard; gr
 ];
 
 const PAGE_TITLES: Record<PageKey, string> = {
+  live: 'Live demo',
   dashboard: 'Overview',
   documents: 'My documents',
   missions: 'Missions',

@@ -208,3 +208,32 @@ export interface SeraAction {
   href?: string | null;   // mailto:, tel:, https://
   text?: string | null;   // for "copy"
 }
+
+// ---------- Live demo mission (/api/chat-triage, /api/confirm-and-execute, /api/mission-status) ----------
+
+export interface TriageResult {
+  student_name: string;
+  course_name: string;
+  symptoms: string;
+  symptoms_hu: string;
+  allergies: string;
+  allergies_hu: string;
+  misses_class: boolean;
+  emergency: boolean;
+  confirmation_question: string;
+  needs_confirmation: boolean;
+}
+
+export type MissionLiveStatus = 'IDLE' | 'TRIAGE_DONE' | 'CALLING_DOCTOR' | 'CALL_FAILED' | 'SENDING_EMAIL' | 'COMPLETED';
+
+export interface MissionLive {
+  status: MissionLiveStatus;
+  student: Partial<TriageResult>;
+  contacts: { doctor_phone?: string; student_phone?: string | null; lecturer_email?: string | null; preferred_window?: string };
+  conversation_id: string | null;
+  appointment_time: string | null;
+  appointment_time_source: 'data_collection' | 'transcript' | 'summary' | 'fallback' | 'manual' | null;
+  transcript_excerpt: string | null;
+  email: { status: 'not_sent' | 'sent' | 'failed' | 'skipped'; to: string | null; error: string | null };
+  events: { at: string; status: MissionLiveStatus; message: string }[];
+}

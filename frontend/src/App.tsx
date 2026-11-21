@@ -10,6 +10,7 @@ import { MissionsPage } from './pages/MissionsPage';
 import { RisksPage } from './pages/RisksPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
 import { AssistantPage } from './pages/AssistantPage';
+import { LiveDemoPage } from './pages/LiveDemoPage';
 import { VoiceWidget } from './components/VoiceWidget';
 import './index.css';
 
@@ -65,6 +66,7 @@ export default function App() {
       case 'risks': return <RisksPage documents={documents} impact={impact} onReport={setImpact} />;
       case 'approvals': return <ApprovalsPage approvals={approvals} missions={missions} onChanged={refreshAll} />;
       case 'assistant': return <AssistantPage />;
+      case 'live': return <LiveDemoPage />;
       case 'dashboard':
       default: return <DashboardPage student={student} documents={documents} missions={missions} deadlines={deadlines} impact={impact} onNavigate={setPage} />;
     }

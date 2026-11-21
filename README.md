@@ -1,9 +1,9 @@
 # CampusBridge (StudentMate)
 
-Inteligência administrativa para estudantes internacionais na Hungria: documentos → missões → análise de impacto → ações aprovadas.
+Administrative intelligence for international students in Hungary: documents → missions → impact analysis → approved actions.
 
-- **Backend:** [`backend/`](backend/README.md) (FastAPI). Corre com `uvicorn app.main:app --app-dir backend --port 8000`.
-- **Frontend:** ainda por fazer. Começa por **[FRONTEND.md](FRONTEND.md)**.
-- **API docs:** http://localhost:8000/docs com o backend a correr.
+- **Backend:** [`backend/`](backend/README.md) (FastAPI). Run with `uvicorn app.main:app --app-dir backend --port 8000`.
+- **Frontend:** not built yet. Start with **[FRONTEND.md](FRONTEND.md)**.
+- **API docs:** http://localhost:8000/docs while the backend is running.
 
-Os ficheiros `main.py`, `prompts.py` e `studentmate-backend.zip` na raiz são o protótipo antigo do chatbot. Ficam só como referência.
+`main.py`, `prompts.py` and `studentmate-backend.zip` in the root are the old chatbot prototype. They are kept for reference only.

@@ -1,10 +1,10 @@
-# Guia para o Frontend — CampusBridge
+# Frontend Guide — CampusBridge
 
-Este guia é para quem vai fazer o frontend. O backend já está pronto para a demo. Aqui tens o que precisas para o ligar.
+This guide is for whoever builds the frontend. The backend is ready for the demo. This is what you need to connect to it.
 
-## 1. Pôr o backend a correr (5 minutos)
+## 1. Run the backend (5 minutes)
 
-É preciso Python 3.11 ou mais recente. Na raiz do repositório:
+You need Python 3.11 or newer. From the repository root:
 
 ```bash
 python -m venv .venv
@@ -15,26 +15,26 @@ cp backend/.env.example backend/.env
 ```
 
 - **Base URL:** `http://localhost:8000`
-- **Documentação interativa:** http://localhost:8000/docs. Aqui dá para experimentar todos os endpoints e ver os formatos exatos.
-- **CORS:** está aberto (`*`), por isso o Vite em `localhost:5173` funciona sem configurar nada.
-- **Sem chave da OpenAI:** o chat funciona em modo mock (`"mock": true`).
-- **Estudante de demo:** usa sempre `stu-demo`. Ainda não há login.
+- **Interactive docs:** http://localhost:8000/docs. You can try every endpoint there and see the exact formats.
+- **CORS:** open (`*`), so Vite on `localhost:5173` works without any setup.
+- **No OpenAI key:** the chat runs in mock mode (`"mock": true`).
+- **Demo student:** always use `stu-demo`. There is no login yet.
 
-> ⚠️ Os dados ficam **em memória**. Reiniciar o servidor volta aos dados iniciais da demo. É útil para ensaiar a apresentação.
+> ⚠️ Data lives **in memory**. Restarting the server resets everything to the demo data. Handy for rehearsing the presentation.
 
-## 2. A história da demo (o que o ecrã tem de contar)
+## 2. The demo story (what the screens must tell)
 
-O SDD diz que o importante **não é o chat**. O importante é mostrar que o sistema liga documentos → missões → impacto. A demo tem esta sequência:
+The SDD says the point is **not the chat**. The point is showing that the system connects documents → missions → impact. The demo goes like this:
 
-1. **Dashboard:** a estudante Amara tem 3 documentos, 3 missões e prazos.
-2. **Alerta vermelho:** o passaporte expira antes do que a renovação da autorização de residência exige (**critical**). Por arrasto, a missão do cartão de morada também fica em risco (**high**).
-3. **Upload de uma carta em húngaro.** O sistema classifica-a e tira as datas. Essas datas aparecem como **"por confirmar"**.
-4. **A estudante confirma a data.** Só agora o valor passa a `confirmed`.
-5. **Criar uma missão** a partir da carta.
-6. **Simulador "e se?":** "e se eu renovar o passaporte até 2032?" → o risco desaparece. Os dados reais não mudam.
-7. **Email para o gabinete:** é preparado e precisa de **aprovação explícita**. O resultado é `simulated`, porque não é enviado de verdade.
+1. **Dashboard:** the student Amara has 3 documents, 3 missions and deadlines.
+2. **Red alert:** her passport expires before the residence permit renewal needs it (**critical**). Because of that, the address card mission is also at risk (**high**).
+3. **Upload a Hungarian letter.** The system classifies it and pulls out the dates. Those dates show as **"pending confirmation"**.
+4. **The student confirms the date.** Only then does the value become `confirmed`.
+5. **Create a mission** from the letter.
+6. **"What if?" simulator:** "what if I renew my passport until 2032?" → the risk disappears. The real data does not change.
+7. **Email to the office:** it is drafted and needs **explicit approval**. The result is `simulated`, because nothing is really sent.
 
-Para a carta da demo, guarda isto como `carta.txt`:
+For the demo letter, save this as `letter.txt`:
 
 ```
 Országos Idegenrendészeti Főigazgatóság
@@ -43,25 +43,25 @@ Tisztelt Amara Demo!
 A hosszabbítási kérelmet legkésőbb 2027.01.10. határidőig nyújtsa be.
 ```
 
-## 3. Ecrãs sugeridos → endpoints
+## 3. Suggested screens → endpoints
 
-| Ecrã | Pedido |
+| Screen | Request |
 |---|---|
 | Dashboard | `GET /api/students/stu-demo` |
-| Timeline de prazos | `GET /api/students/stu-demo/deadlines` |
-| Painel de riscos | `POST /api/students/stu-demo/impact` com `{"event":{"type":"check"}}` |
-| Simulador "e se?" | `POST /api/students/stu-demo/impact` com um evento de cenário (ver §5) |
-| Upload de documento | `POST /api/students/stu-demo/documents` (multipart) |
-| Rever dados extraídos | `POST /api/documents/{docId}/fields/{field}` |
-| Detalhe de missão | `GET /api/missions/{missionId}` |
-| Nova missão | `POST /api/students/stu-demo/missions` |
-| Mudar estado / tarefa | `POST /api/missions/{id}/status`, `POST /api/missions/{id}/tasks/{taskId}?done=true` |
-| Aprovações | `POST /api/students/stu-demo/approvals`, `GET .../approvals`, `POST /api/approvals/{id}/approve` ou `/reject` |
+| Deadline timeline | `GET /api/students/stu-demo/deadlines` |
+| Risk panel | `POST /api/students/stu-demo/impact` with `{"event":{"type":"check"}}` |
+| "What if?" simulator | `POST /api/students/stu-demo/impact` with a scenario event (see §5) |
+| Document upload | `POST /api/students/stu-demo/documents` (multipart) |
+| Review extracted data | `POST /api/documents/{docId}/fields/{field}` |
+| Mission detail | `GET /api/missions/{missionId}` |
+| New mission | `POST /api/students/stu-demo/missions` |
+| Change status / task | `POST /api/missions/{id}/status`, `POST /api/missions/{id}/tasks/{taskId}?done=true` |
+| Approvals | `POST /api/students/stu-demo/approvals`, `GET .../approvals`, `POST /api/approvals/{id}/approve` or `/reject` |
 | Chat | `POST /api/students/stu-demo/agent/chat` |
 
-## 4. Tipos (TypeScript)
+## 4. Types (TypeScript)
 
-Copia isto para `src/api/types.ts`. As datas chegam sempre como string `YYYY-MM-DD` e os timestamps em ISO.
+Copy this into `src/api/types.ts`. Dates always arrive as `YYYY-MM-DD` strings and timestamps as ISO strings.
 
 ```ts
 export type Verification =
@@ -90,8 +90,8 @@ export interface StudentDocument {
   id: string; student_id: string; type: DocumentType; title: string;
   original_filename: string | null;
   extracted_text: string | null;
-  extraction_error: string | null;   // se vier preenchido, MOSTRAR ao utilizador
-  fields: Record<string, Fact>;      // ex.: expiry_date, deadline, address, dates_found
+  extraction_error: string | null;   // if set, SHOW it to the user
+  fields: Record<string, Fact>;      // e.g. expiry_date, deadline, address, dates_found
   uploaded_at: string;
 }
 
@@ -106,7 +106,7 @@ export interface SourceReference {
 export interface Requirement {
   id: string; description: string; document_type: DocumentType;
   min_validity_days_after_deadline: number;
-  satisfied_by: string | null;       // id do documento
+  satisfied_by: string | null;       // document id
   source: SourceReference; verified: boolean;
 }
 
@@ -132,14 +132,14 @@ export interface ImpactItem {
   explanation: string;
   evidence: { kind: "fact" | "requirement" | "mission" | "dependency"; description: string;
               status: string | null; source: string | null }[];
-  assumptions: string[];             // mostrar como "pressupostos / incertezas"
+  assumptions: string[];             // show as "assumptions / uncertainties"
   recommended_actions: string[];
 }
 
 export interface ImpactReport {
   student_id: string; event: Record<string, unknown>; as_of: string;
-  overall_level: ImpactLevel; items: ImpactItem[];   // já vêm ordenados do mais grave
-  disclaimer: string;                                // mostrar sempre
+  overall_level: ImpactLevel; items: ImpactItem[];   // already sorted, most severe first
+  disclaimer: string;                                // always show it
 }
 
 export type ApprovalStatus = "pending" | "approved" | "rejected" | "executed" | "simulated" | "failed";
@@ -153,7 +153,7 @@ export interface ApprovalRequest {
 export interface ChatReply { reply: string; model: string; mock: boolean; }
 ```
 
-## 5. Exemplos de pedidos
+## 5. Request examples
 
 ```ts
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -162,7 +162,7 @@ const SID = "stu-demo";
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(API + path, init);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Pedido inválido");
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Invalid request");
   return data as T;
 }
 const post = <T>(path: string, body: unknown) =>
@@ -171,90 +171,90 @@ const post = <T>(path: string, body: unknown) =>
 // Dashboard
 const twin = await api<Twin>(`/api/students/${SID}`);
 
-// Riscos atuais
+// Current risks
 const report = await post<ImpactReport>(`/api/students/${SID}/impact`, { event: { type: "check" } });
 
-// "E se?": mudar a validade de um documento (não altera nada guardado)
+// "What if?": change a document's expiry (nothing stored is changed)
 await post<ImpactReport>(`/api/students/${SID}/impact`, {
   event: { type: "document_expiry_change", document_id: "doc-passport", new_expiry_date: "2032-01-01" },
 });
-// "E se?": perder um documento
+// "What if?": lose a document
 await post<ImpactReport>(`/api/students/${SID}/impact`, {
   event: { type: "document_removed", document_id: "doc-housing" },
 });
 
-// Upload (NÃO definir Content-Type à mão)
+// Upload (do NOT set Content-Type yourself)
 const form = new FormData();
-form.append("file", file);              // .pdf .txt .png .jpg .jpeg, máx. 10 MB
-form.append("title", "Carta da imigração"); // opcional
+form.append("file", file);                  // .pdf .txt .png .jpg .jpeg, max 10 MB
+form.append("title", "Immigration letter"); // optional
 const doc = await api<StudentDocument>(`/api/students/${SID}/documents`, { method: "POST", body: form });
 
-// Confirmar, corrigir ou rejeitar um campo extraído
+// Confirm, correct or reject an extracted field
 await post(`/api/documents/${doc.id}/fields/expiry_date`, { decision: "confirm" });
 await post(`/api/documents/${doc.id}/fields/expiry_date`, { decision: "confirm", value: "2027-01-25" });
 await post(`/api/documents/${doc.id}/fields/expiry_date`, { decision: "reject" });
 
-// Nova missão ligada à carta
+// New mission linked to the letter
 await post<Mission>(`/api/students/${SID}/missions`, {
-  title: "Responder à carta da imigração", institution: "OIF", deadline: "2027-01-10",
-  document_ids: [doc.id], depends_on: [], tasks: ["Ler a carta", "Juntar documentos"],
+  title: "Answer the immigration letter", institution: "OIF", deadline: "2027-01-10",
+  document_ids: [doc.id], depends_on: [], tasks: ["Read the letter", "Collect documents"],
 });
 
-// Aprovação de email
+// Email approval
 const ap = await post<ApprovalRequest>(`/api/students/${SID}/approvals`, {
   mission_id: "mis-permit", to: "office@example.org", subject: "Kérdés", body: "Tisztelt ...",
 });
-await post<ApprovalRequest>(`/api/approvals/${ap.id}/approve`, {});   // ou /reject
+await post<ApprovalRequest>(`/api/approvals/${ap.id}/approve`, {});   // or /reject
 
-// Chat (history = últimas mensagens, a mais antiga primeiro)
+// Chat (history = recent messages, oldest first)
 await post<ChatReply>(`/api/students/${SID}/agent/chat`, {
-  message: "O que devo resolver primeiro?", language: "auto", history: [],
+  message: "What should I fix first?", language: "auto", history: [],
 });
 ```
 
-## 6. Regras de UI que não podem falhar
+## 6. UI rules that must not break
 
-Vêm do SDD e um júri vai reparar nelas:
+These come from the SDD, and a jury will notice them:
 
-1. **Mostrar o estado de cada dado.** Um `extracted_pending_confirmation` tem de ter um aspeto visual diferente (badge amarelo, "por confirmar") e botões **Confirmar / Corrigir / Rejeitar**.
-2. **Mostrar as provas do impacto.** Cada risco deve abrir as `evidence` e as `assumptions`. A ideia é "o sistema mostra porquê".
-3. **O `disclaimer` aparece sempre** junto ao relatório de impacto.
-4. **Aprovações.** O ecrã mostra o `summary` e o `payload` completo (para quem, assunto, texto) **antes** dos botões Aprovar / Rejeitar.
-5. **Nunca escrever "Enviado ✓" quando o estado é `simulated`.** Mostra o texto de `result`, que diz que não foi enviado de verdade.
-6. **Se o documento trouxer `extraction_error`** (por exemplo, imagens, que ainda não têm OCR), mostra o erro e deixa o utilizador preencher os campos à mão. Usa o endpoint de campos com `value`.
-7. **Cores sugeridas por nível:** critical = vermelho, high = laranja, medium = amarelo, low = verde, unknown = cinzento.
+1. **Show the status of every fact.** An `extracted_pending_confirmation` value must look different (yellow "pending confirmation" badge) and have **Confirm / Correct / Reject** buttons.
+2. **Show the evidence behind each impact.** Every risk should expand to its `evidence` and `assumptions`. The idea is "the system shows why".
+3. **Always show the `disclaimer`** next to the impact report.
+4. **Approvals.** The screen shows the `summary` and the full `payload` (recipient, subject, text) **before** the Approve / Reject buttons.
+5. **Never write "Sent ✓" when the status is `simulated`.** Show the `result` text, which says nothing was really sent.
+6. **If a document has `extraction_error`** (e.g. images, which have no OCR yet), show the error and let the user fill in the fields by hand. Use the fields endpoint with `value`.
+7. **Suggested colours per level:** critical = red, high = orange, medium = yellow, low = green, unknown = grey.
 
-## 7. Erros
+## 7. Errors
 
-- `400`: upload inválido (tipo, tamanho, PDF falso). A mensagem vem em `detail` (string).
-- `404`: id não existe.
-- `409`: transição não permitida, ou aprovação já decidida. Exemplo: `"Cannot go from CREATED to COMPLETED"`.
-- `422`: validação. Aqui `detail` é uma **lista** de erros (formato do FastAPI), não uma string.
-- `502`: o serviço de IA falhou. Mostra "tenta outra vez" e não inventes uma resposta.
+- `400`: invalid upload (type, size, fake PDF). The message is in `detail` (a string).
+- `404`: the id does not exist.
+- `409`: transition not allowed, or approval already decided. Example: `"Cannot go from CREATED to COMPLETED"`.
+- `422`: validation error. Here `detail` is a **list** of errors (FastAPI format), not a string.
+- `502`: the AI service failed. Show "try again" and never make up an answer.
 
-Transições de estado das missões que são permitidas:
+Allowed mission status transitions:
 `CREATED → ANALYSIS → PLANNED → IN_PROGRESS → (WAITING_FOR_USER | WAITING_FOR_INSTITUTION ↔ IN_PROGRESS) → COMPLETED`.
-Qualquer estado ativo também pode passar para `CANCELLED`. Os estados de `BLOCKED` e `EXPIRED` estão em `backend/app/models.py`.
+Any active state can also go to `CANCELLED`. The `BLOCKED` and `EXPIRED` transitions are in `backend/app/models.py`.
 
-## 8. Dados de demo (ids fixos)
+## 8. Demo data (fixed ids)
 
-| id | O que é |
+| id | What it is |
 |---|---|
-| `doc-passport` | Passaporte, válido até 2027-03-10 (confirmado) |
-| `doc-enrollment` | Certificado de matrícula, até 2027-08-31 |
-| `doc-housing` | Contrato do dormitório, até 2027-01-31 (**por confirmar**) |
-| `mis-permit` | Renovar a autorização de residência, prazo 2027-01-20 |
-| `mis-registration` | Inscrição do semestre, prazo 2027-02-05 |
-| `mis-addresscard` | Cartão de morada, depende de `mis-permit` |
+| `doc-passport` | Passport, valid until 2027-03-10 (confirmed) |
+| `doc-enrollment` | Enrollment certificate, until 2027-08-31 |
+| `doc-housing` | Dormitory contract, until 2027-01-31 (**pending confirmation**) |
+| `mis-permit` | Renew residence permit, deadline 2027-01-20 |
+| `mis-registration` | Spring semester registration, deadline 2027-02-05 |
+| `mis-addresscard` | Address card, depends on `mis-permit` |
 
-> A regra "passaporte válido mais 180 dias" é **fictícia**, feita só para a demo.
+> The rule "passport valid for 180 more days" is **fictional**, made up for the demo only.
 
-## 9. Ainda não existe (não contes com isto)
+## 9. Not available yet (don't rely on it)
 
-- Login / autenticação. Usa `stu-demo`.
-- Persistência: os dados reiniciam com o servidor.
-- OCR de imagens.
-- Envio real de email.
-- Explicação das cartas pelo LLM. Está planeada: vai aparecer como um campo novo no documento.
+- Login / authentication. Use `stu-demo`.
+- Persistence: data resets with the server.
+- OCR for images.
+- Real email sending.
+- LLM explanation of letters. It is planned and will appear as a new field on the document.
 
-Dúvidas sobre o backend: falem com quem está no `backend/`, ou vejam `backend/README.md`.
+Backend questions: talk to whoever owns `backend/`, or see `backend/README.md`.

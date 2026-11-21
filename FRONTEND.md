@@ -15,6 +15,7 @@ cp backend/.env.example backend/.env
 ```
 
 - **Base URL:** `http://localhost:8000`
+- **Using the backend running on a teammate's laptop (same Wi-Fi):** use `http://<their-IP>:8000` instead (ask them for the IP; they start the server with `--host 0.0.0.0`). In Vite, put it in `.env.local` as `VITE_API_URL=http://<their-IP>:8000` and read it with `import.meta.env.VITE_API_URL`. First check that `http://<their-IP>:8000/health` opens in your browser.
 - **Interactive docs:** http://localhost:8000/docs. You can try every endpoint there and see the exact formats.
 - **CORS:** open (`*`), so Vite on `localhost:5173` works without any setup.
 - **No OpenAI key:** the chat runs in mock mode (`"mock": true`).

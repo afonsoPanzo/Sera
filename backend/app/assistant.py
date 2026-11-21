@@ -36,7 +36,7 @@ CURRENT TOPIC
 
 HOW TO ANSWER
 - This is a chat: keep it under about 150 words.
-- Start with the direct answer in 1-2 sentences, then at most 5 short numbered steps, then one line "Where to check: ..." (in Hungarian answers write it as "Hol ellenőrizd: ...").
+- Start with the direct answer in 1-2 sentences, then at most 5 short numbered steps, then one final line saying where to check (use the label given in LANGUAGE).
 - If the answer depends on the student's situation (scholarship, nationality, university) and you don't know it, give the general answer and ask one short question at the end.
 - Only give specific numbers, fees, days, deadlines, offices or required documents if they are in VERIFIED KNOWLEDGE. Otherwise describe the step in general terms and point to the official source. Never invent them.
 - When VERIFIED KNOWLEDGE covers the question, follow it exactly (in both English and Hungarian answers) and mention its source.
@@ -51,8 +51,8 @@ SAFETY AND ACCURACY
 {knowledge}"""
 
 LANGUAGE_RULES: dict[str, str] = {
-    "en": "Always answer in English.",
-    "hu": "Always answer in Hungarian (magyarul).",
+    "en": "Always answer in English. The final line starts with \"Where to check:\".",
+    "hu": "Always answer in Hungarian (magyarul). The final line starts with \"Hol ellenőrizd:\".",
 }
 
 TOPIC_RULES: dict[str, str] = {

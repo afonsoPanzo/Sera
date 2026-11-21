@@ -18,6 +18,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 # Any OpenAI-compatible provider (e.g. Gemini free tier, Groq). Empty = OpenAI.
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL") or None
+# Comma-separated models tried in order when the main one is overloaded or times out.
+OPENAI_FALLBACK_MODELS = [m.strip() for m in os.getenv("OPENAI_FALLBACK_MODELS", "").split(",") if m.strip()]
 MOCK_MODE = os.getenv("MOCK_MODE", "0") == "1" or not OPENAI_API_KEY
 MAX_HISTORY = 10
 

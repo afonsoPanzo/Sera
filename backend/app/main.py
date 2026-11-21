@@ -108,7 +108,7 @@ def chat(body: SimpleChatRequest):
         return assistant.answer(body.message, body.language, body.topic,
                                 [m.model_dump() for m in body.history],
                                 agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE,
-                                agent.OPENAI_BASE_URL)
+                                agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
     except Exception as e:  # never report a failed call as success
         body = getattr(e, "body", None)
         code = body.get("code") if isinstance(body, dict) else None

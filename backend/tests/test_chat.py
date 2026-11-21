@@ -59,7 +59,7 @@ def test_knowledge_is_injected(tmp_path, monkeypatch):
 
 def test_no_knowledge_folder(tmp_path, monkeypatch):
     monkeypatch.setattr(assistant, "KNOWLEDGE_DIR", tmp_path / "missing")
-    assert "VERIFIED KNOWLEDGE" not in assistant.build_system_prompt("en", "general")
+    assert "VERIFIED KNOWLEDGE (prepared" not in assistant.build_system_prompt("en", "general")
 
 
 def test_ai_failure_is_502(client, monkeypatch):
@@ -74,3 +74,62 @@ def test_ai_failure_is_502(client, monkeypatch):
     monkeypatch.setattr(assistant, "answer", boom)
     r = client.post("/api/chat", json={"message": "hi"})
     assert r.status_code == 502
+
+
+class _Resp:
+    def __init__(self, text):
+        self.choices = [type("C", (), {"message": type("M", (), {"content": text})()})()]
+
+
+def _fake_openai(monkeypatch, behaviour):
+    """behaviour: dict model -> Exception or reply text; records the call order."""
+    calls = []
+
+    class FakeClient:
+        def __init__(self, **kw):
+            self.chat = type("Chat", (), {"completions": self})()
+
+        def create(self, model, **kw):
+            calls.append(model)
+            r = behaviour[model]
+            if isinstance(r, Exception):
+                raise r
+            return _Resp(r)
+
+    import openai
+    monkeypatch.setattr(openai, "OpenAI", FakeClient)
+    return calls
+
+
+class Overloaded(Exception):
+    status_code = 503
+
+
+class NoCredits(Exception):
+    status_code = 429
+    body = {"code": "insufficient_quota"}
+
+
+def test_fallback_model_used_when_main_overloaded(monkeypatch):
+    calls = _fake_openai(monkeypatch, {"main": Overloaded(), "backup": "Hello"})
+    r = assistant.answer("hi", "en", "general", [], "k", "main", False, None, ["backup"])
+    assert calls == ["main", "backup"] and r["model"] == "backup" and r["reply"] == "Hello"
+
+
+def test_no_fallback_on_quota_error(monkeypatch):
+    calls = _fake_openai(monkeypatch, {"main": NoCredits(), "backup": "Hello"})
+    try:
+        assistant.answer("hi", "en", "general", [], "k", "main", False, None, ["backup"])
+        assert False, "should raise"
+    except NoCredits:
+        pass
+    assert calls == ["main"]
+
+
+def test_all_models_overloaded_raises(monkeypatch):
+    _fake_openai(monkeypatch, {"main": Overloaded(), "backup": Overloaded()})
+    try:
+        assistant.answer("hi", "en", "general", [], "k", "main", False, None, ["backup"])
+        assert False, "should raise"
+    except Overloaded:
+        pass

@@ -35,8 +35,11 @@ CURRENT TOPIC
 {topic_rule}
 
 HOW TO ANSWER
-- Short and practical: start with the direct answer, then 3-6 numbered steps, then where to check.
-- If the answer depends on the student's city, university or nationality and you don't know it, ask one short question.
+- This is a chat: keep it under about 150 words.
+- Start with the direct answer in 1-2 sentences, then at most 5 short numbered steps, then one line "Where to check: ..." (in Hungarian answers write it as "Hol ellenőrizd: ...").
+- If the answer depends on the student's situation (scholarship, nationality, university) and you don't know it, give the general answer and ask one short question at the end.
+- Only give specific numbers, fees, days, deadlines, offices or required documents if they are in VERIFIED KNOWLEDGE. Otherwise describe the step in general terms and point to the official source. Never invent them.
+- When VERIFIED KNOWLEDGE covers the question, follow it exactly (in both English and Hungarian answers) and mention its source.
 
 SAFETY AND ACCURACY
 - You are not a lawyer, doctor or official. Never guarantee legal, immigration, medical or university outcomes.
@@ -124,8 +127,19 @@ def mock_reply(message: str, language: Language, topic: Topic) -> str:
             "The real answer comes from the AI once the API key is set.")
 
 
+def _is_transient(e: Exception) -> bool:
+    """Overload / timeout / rate limit — worth trying the next model. Not quota or auth errors."""
+    body = getattr(e, "body", None)
+    code = body.get("code") if isinstance(body, dict) else None
+    if code in ("insufficient_quota", "credit_balance_exhausted"):
+        return False
+    return (type(e).__name__ in ("APITimeoutError", "APIConnectionError", "RateLimitError")
+            or getattr(e, "status_code", None) in (500, 502, 503, 504))
+
+
 def answer(message: str, language: str, topic: Topic, history: list[dict],
-           api_key: str, model: str, mock: bool, base_url: str | None = None) -> dict:
+           api_key: str, model: str, mock: bool, base_url: str | None = None,
+           fallback_models: list[str] | None = None) -> dict:
     lang: Language = detect_language(message) if language == "auto" else language  # type: ignore[assignment]
     if mock:
         return {"reply": mock_reply(message, lang, topic), "language": lang, "topic": topic,
@@ -133,12 +147,23 @@ def answer(message: str, language: str, topic: Topic, history: list[dict],
 
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key, base_url=base_url, timeout=30, max_retries=1)
+    client = OpenAI(api_key=api_key, base_url=base_url, timeout=25, max_retries=0)
     messages = [{"role": "system", "content": build_system_prompt(lang, topic)},
                 *history[-MAX_HISTORY:],
                 {"role": "user", "content": message}]
-    completion = client.chat.completions.create(model=model, messages=messages, temperature=0.4, max_tokens=700)
-    reply = (completion.choices[0].message.content or "").strip()
-    if not reply:
-        raise RuntimeError("empty answer")
-    return {"reply": reply, "language": lang, "topic": topic, "model": model, "mock": False}
+    models = [model, *[m for m in (fallback_models or []) if m and m != model]]
+    last: Exception | None = None
+    for m in models:
+        try:
+            completion = client.chat.completions.create(model=m, messages=messages, temperature=0.3,
+                                                        max_tokens=700)
+        except Exception as e:
+            if not _is_transient(e):
+                raise
+            last = e
+            continue
+        reply = (completion.choices[0].message.content or "").strip()
+        if reply:
+            return {"reply": reply, "language": lang, "topic": topic, "model": m, "mock": False}
+        last = RuntimeError("empty answer")
+    raise last or RuntimeError("no model available")

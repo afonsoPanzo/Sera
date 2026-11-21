@@ -1,4 +1,4 @@
-# CampusBridge (StudentMate)
+# Sera
 
 Administrative intelligence for international students in Hungary: documents → missions → impact analysis → approved actions.
 

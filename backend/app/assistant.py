@@ -1,4 +1,4 @@
-"""StudentMate AI chat (Person 1 deliverable).
+"""Sera chat (Person 1 deliverable).
 
 A question goes in, an AI answer comes out. English and Hungarian only.
 The frontend's topic buttons (healthcare, university, immigration, translation)
@@ -19,7 +19,7 @@ KNOWLEDGE_DIR = Path(os.getenv("KNOWLEDGE_DIR", Path(__file__).resolve().parent.
 MAX_KNOWLEDGE_CHARS = 12000
 MAX_HISTORY = 10
 
-SYSTEM_PROMPT = """You are StudentMate AI, a friendly assistant that helps international students live and study in Hungary.
+SYSTEM_PROMPT = """You are Sera, a friendly assistant that helps international students live and study in Hungary.
 
 WHAT YOU HELP WITH
 - University life: enrolment, the Neptun system, exams, credits, student cards, dormitories.

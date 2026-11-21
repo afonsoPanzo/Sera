@@ -1,4 +1,4 @@
-"""CampusBridge API (SDD §9.1).
+"""Sera API (SDD §9.1).
 
 Run (from backend/):  uvicorn app.main:app --reload --port 8000
 Docs:                 http://localhost:8000/docs
@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import os
 from datetime import date
+from pathlib import Path
 from typing import Any, List, Literal, Optional
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicit path: under `uvicorn --reload` the default lookup uses the cwd, not backend/.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
@@ -26,7 +28,7 @@ from .models import (  # noqa: E402
 )
 from .store import DEMO_STUDENT_ID, new_id, store  # noqa: E402
 
-app = FastAPI(title="CampusBridge", version="0.1.0",
+app = FastAPI(title="Sera", version="0.1.0",
               description="Administrative intelligence for students. Demo student id: " + DEMO_STUDENT_ID)
 
 app.add_middleware(
@@ -72,7 +74,7 @@ def health():
     return {"status": "ok", "mock": agent.MOCK_MODE, "model": agent.OPENAI_MODEL}
 
 
-# ---------- StudentMate chat (main endpoint for the frontend) ----------
+# ---------- Sera chat (main endpoint for the frontend) ----------
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
@@ -107,6 +109,10 @@ def chat(body: SimpleChatRequest):
                                 [m.model_dump() for m in body.history],
                                 agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE)
     except Exception as e:  # never report a failed call as success
+        body = getattr(e, "body", None)
+        code = body.get("code") if isinstance(body, dict) else None
+        if code in ("insufficient_quota", "credit_balance_exhausted"):
+            raise HTTPException(503, "AI service unavailable: the OpenAI account has no credits")
         raise HTTPException(502, f"AI service error: {type(e).__name__}")
 
 

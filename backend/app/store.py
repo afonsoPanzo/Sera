@@ -18,7 +18,7 @@ DEMO_STUDENT_ID = "stu-demo"
 
 # Fictional rules for the demo. They are NOT real immigration rules.
 DEMO_KB = SourceReference(
-    title="CampusBridge demo knowledge base (fictional rules)",
+    title="Sera demo knowledge base (fictional rules)",
     official=False,
     note="Replace with the official immigration office / university source before real use.",
 )

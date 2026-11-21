@@ -1,4 +1,4 @@
-# Frontend Guide — CampusBridge
+# Frontend Guide — Sera
 
 This guide is for whoever builds the frontend. The backend is ready for the demo. This is what you need to connect to it.
 
@@ -54,10 +54,10 @@ history.push({ role: "user", content: input }, { role: "assistant", content: r.r
 ```
 
 - **Translation button:** the reply has the Hungarian text first, then a short English version. Show it so it's easy to copy.
-- **Errors:** `422` = invalid input (empty message, unknown language or topic). `502` = the AI failed. Show "try again".
+- **Errors:** `422` = invalid input (empty message, unknown language or topic). `502` = the AI failed, show "try again". `503` = AI unavailable (no credits).
 - Render `reply` keeping line breaks (`white-space: pre-wrap`), or use a small markdown renderer.
 
-Everything below (documents, missions, impact) is the **extended CampusBridge API**. Use it only if there is time.
+Everything below (documents, missions, impact) is the **extended Sera API**. Use it only if there is time.
 
 ## 2. The demo story (what the screens must tell)
 
@@ -269,6 +269,7 @@ These come from the SDD, and a jury will notice them:
 - `409`: transition not allowed, or approval already decided. Example: `"Cannot go from CREATED to COMPLETED"`.
 - `422`: validation error. Here `detail` is a **list** of errors (FastAPI format), not a string.
 - `502`: the AI service failed. Show "try again" and never make up an answer.
+- `503`: the AI is unavailable (e.g. the OpenAI account has no credits). Show "assistant temporarily unavailable".
 
 Allowed mission status transitions:
 `CREATED → ANALYSIS → PLANNED → IN_PROGRESS → (WAITING_FOR_USER | WAITING_FOR_INSTITUTION ↔ IN_PROGRESS) → COMPLETED`.

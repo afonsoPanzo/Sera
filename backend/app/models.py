@@ -1,4 +1,4 @@
-"""Domain models for CampusBridge (SDD §5, §6)."""
+"""Domain models for Sera (SDD §5, §6)."""
 
 from __future__ import annotations
 

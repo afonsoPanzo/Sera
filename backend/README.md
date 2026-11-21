@@ -1,6 +1,6 @@
-# CampusBridge — Backend (MVP)
+# Sera — Backend (MVP)
 
-FastAPI backend for the CampusBridge SDD v1.0. It implements the MVP workflow:
+FastAPI backend for the Sera system design document (SDD v1.0). It implements the MVP workflow:
 
 **document upload → extraction → student confirms → mission → impact analysis → recommended actions → approval**
 

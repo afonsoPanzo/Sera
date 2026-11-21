@@ -22,6 +22,43 @@ cp backend/.env.example backend/.env
 
 > ⚠️ Data lives **in memory**. Restarting the server resets everything to the demo data. Handy for rehearsing the presentation.
 
+## ⭐ Start here: the chat (main deliverable)
+
+This is the endpoint for the chat screen, the language selector and the topic buttons. Languages are **English and Hungarian** only.
+
+```ts
+// Topic buttons + example questions (labels in EN and HU)
+const topics = await api<{ id: Topic; label: { en: string; hu: string };
+                           examples: { en: string[]; hu?: string[] } }[]>(`/api/topics`);
+
+type Topic = "general" | "healthcare" | "university" | "immigration" | "translation";
+
+interface ChatRequest {
+  message: string;                        // 1–2000 chars
+  language?: "auto" | "en" | "hu";        // "auto" = answer in the language the student wrote in
+  topic?: Topic;                          // set by the button the student clicked; default "general"
+  history?: { role: "user" | "assistant"; content: string }[];   // oldest first, last 10 used
+}
+interface ChatResponse {
+  reply: string;                          // plain text with line breaks and numbered steps
+  language: "en" | "hu";                  // language actually used
+  topic: Topic;
+  model: string;                          // "mock" when there is no API key
+  mock: boolean;
+}
+
+const r = await post<ChatResponse>(`/api/chat`, {
+  message: "How do I get a TAJ card?", language: "auto", topic: "healthcare", history,
+});
+history.push({ role: "user", content: input }, { role: "assistant", content: r.reply });
+```
+
+- **Translation button:** the reply has the Hungarian text first, then a short English version. Show it so it's easy to copy.
+- **Errors:** `422` = invalid input (empty message, unknown language or topic). `502` = the AI failed. Show "try again".
+- Render `reply` keeping line breaks (`white-space: pre-wrap`), or use a small markdown renderer.
+
+Everything below (documents, missions, impact) is the **extended CampusBridge API**. Use it only if there is time.
+
 ## 2. The demo story (what the screens must tell)
 
 The SDD says the point is **not the chat**. The point is showing that the system connects documents → missions → impact. The demo goes like this:
@@ -57,7 +94,8 @@ A hosszabbítási kérelmet legkésőbb 2027.01.10. határidőig nyújtsa be.
 | New mission | `POST /api/students/stu-demo/missions` |
 | Change status / task | `POST /api/missions/{id}/status`, `POST /api/missions/{id}/tasks/{taskId}?done=true` |
 | Approvals | `POST /api/students/stu-demo/approvals`, `GET .../approvals`, `POST /api/approvals/{id}/approve` or `/reject` |
-| Chat | `POST /api/students/stu-demo/agent/chat` |
+| Chat (main) | `POST /api/chat` and `GET /api/topics` (see "Start here") |
+| Chat with the student's context | `POST /api/students/stu-demo/agent/chat` |
 
 ## 4. Types (TypeScript)
 

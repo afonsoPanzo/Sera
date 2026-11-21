@@ -18,7 +18,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from . import agent, documents  # noqa: E402
+from . import agent, assistant, documents  # noqa: E402
 from .impact import analyze  # noqa: E402
 from .models import (  # noqa: E402
     MISSION_TRANSITIONS, ApprovalRequest, ApprovalStatus, Document, Fact, ImpactReport, Mission,
@@ -70,6 +70,44 @@ def public_doc(d: Document) -> dict:
 @app.get("/health")
 def health():
     return {"status": "ok", "mock": agent.MOCK_MODE, "model": agent.OPENAI_MODEL}
+
+
+# ---------- StudentMate chat (main endpoint for the frontend) ----------
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., max_length=4000)
+
+
+class SimpleChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=2000, description="The student's question")
+    language: Literal["auto", "en", "hu"] = "auto"
+    topic: Literal["general", "healthcare", "university", "immigration", "translation"] = "general"
+    history: List[ChatMessage] = Field(default_factory=list, description="Previous turns, oldest first")
+
+
+class SimpleChatResponse(BaseModel):
+    reply: str
+    language: Literal["en", "hu"]
+    topic: str
+    model: str
+    mock: bool
+
+
+@app.get("/api/topics")
+def topics():
+    """Topic buttons for the frontend, with example questions in EN and HU."""
+    return assistant.TOPICS
+
+
+@app.post("/api/chat", response_model=SimpleChatResponse)
+def chat(body: SimpleChatRequest):
+    try:
+        return assistant.answer(body.message, body.language, body.topic,
+                                [m.model_dump() for m in body.history],
+                                agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE)
+    except Exception as e:  # never report a failed call as success
+        raise HTTPException(502, f"AI service error: {type(e).__name__}")
 
 
 # ---------- students / digital twin ----------
@@ -282,11 +320,6 @@ def decide_approval(approval_id: str, decision: Literal["approve", "reject"]):
 
 
 # ---------- agent ----------
-
-class ChatMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str = Field(..., max_length=4000)
-
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)

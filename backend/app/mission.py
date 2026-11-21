@@ -430,6 +430,7 @@ def verify_signature(raw: bytes, header: str | None) -> bool:
 async def elevenlabs_webhook(request: Request, background: BackgroundTasks):
     raw = await request.body()
     if not verify_signature(raw, request.headers.get("elevenlabs-signature")):
+        mission.update("A webhook was REJECTED (invalid signature). Check ELEVENLABS_WEBHOOK_SECRET or use the fallback.")
         raise HTTPException(401, "Invalid webhook signature")
     try:
         payload = json.loads(raw or b"{}")

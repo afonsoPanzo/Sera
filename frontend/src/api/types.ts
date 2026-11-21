@@ -234,6 +234,6 @@ export interface MissionLive {
   appointment_time: string | null;
   appointment_time_source: 'data_collection' | 'transcript' | 'summary' | 'fallback' | 'manual' | null;
   transcript_excerpt: string | null;
-  email: { status: 'not_sent' | 'sent' | 'failed' | 'skipped'; to: string | null; error: string | null };
+  email: { status: 'not_sent' | 'sent' | 'failed' | 'skipped' | 'simulated'; to: string | null; error: string | null; subject?: string; body?: string };
   events: { at: string; status: MissionLiveStatus; message: string }[];
 }

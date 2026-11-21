@@ -164,8 +164,8 @@ def chat_triage(body: TriageRequest):
     else:
         noted = f"I have noted your symptoms ({symptoms})"
         noted += f" and your {allergies} allergy." if r["allergies"] else "."
-        email_part = (f" and send an official absence email to your lecturer for {course}"
-                      if email_configured() else "")
+        email_part = (f" and notify your lecturer for {course} by email"
+                      if (email_configured() or env("LECTURER_EMAIL")) else "")
         question = f"{noted} Should I call the campus doctor in Hungarian to book an appointment{email_part}?"
 
     result = {"student_name": student, "course_name": course, "symptoms": symptoms, "symptoms_hu": symptoms_hu,
@@ -231,14 +231,15 @@ async def confirm_and_execute(body: ConfirmRequest):
     if mission.snapshot()["status"] == "CALLING_DOCTOR":
         raise HTTPException(409, "A call is already in progress. Wait for it or POST /api/mission-reset.")
 
+    lecturer_email = body.lecturer_email or env("LECTURER_EMAIL") or None
     variables = {"student_name": body.student_name, "symptoms": body.symptoms,
                  "allergies": body.allergies, "preferred_window": body.preferred_window}
     mission.update("Student gave permission. Calling the doctor in Hungarian…", status="CALLING_DOCTOR",
                    student={"student_name": body.student_name, "course_name": body.course_name,
                             "symptoms": body.symptoms, "allergies": body.allergies},
                    contacts={"doctor_phone": doctor, "student_phone": student_phone,
-                             "lecturer_email": body.lecturer_email, "preferred_window": body.preferred_window},
-                   email={"to": body.lecturer_email})
+                             "lecturer_email": lecturer_email, "preferred_window": body.preferred_window},
+                   email={"to": lecturer_email})
     try:
         result = await _place_call(doctor, variables, env("ELEVENLABS_AGENT_ID"))
     except HTTPException as e:
@@ -322,7 +323,7 @@ def build_email(s: dict, contacts: dict, appt: str, confirmed: bool) -> EmailMes
     appt_hu = appt.replace(" CET", "") + (" (CET)" if confirmed else " (CET, megerősítés alatt)")
     msg = EmailMessage()
     msg["Subject"] = f"Absence notice / Hiányzás bejelentése – {name} – {course} – {today}"
-    msg["From"] = env("SMTP_EMAIL")
+    msg["From"] = env("SMTP_EMAIL") or "Sera demo <sera-demo@localhost>"
     msg["To"] = contacts.get("lecturer_email")
     # Data minimisation: the lecturer gets the absence and the appointment, not the medical details.
     msg.set_content(f"""Dear Lecturer,
@@ -375,8 +376,13 @@ async def complete_mission(payload: dict, source_label: str) -> None:
                    status="SENDING_EMAIL", appointment_time=appt, appointment_time_source=source,
                    transcript_excerpt=excerpt)
     snap = mission.snapshot()
-    to = snap["contacts"].get("lecturer_email")
-    if not email_configured():
+    to = snap["contacts"].get("lecturer_email") or env("LECTURER_EMAIL") or None
+    if not email_configured() and to:
+        msg = build_email(snap["student"], {**snap["contacts"], "lecturer_email": to}, appt, confirmed)
+        mission.update(f"Absence email prepared for {to} (demo mode: not actually sent).",
+                       email={"status": "simulated", "to": to, "subject": msg["Subject"],
+                              "body": msg.get_content(), "error": None})
+    elif not email_configured():
         mission.update("Lecturer email is switched off (no SMTP settings): skipped.",
                        email={"status": "skipped", "error": None})
     elif not to:

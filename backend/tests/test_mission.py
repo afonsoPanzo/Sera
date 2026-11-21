@@ -14,7 +14,7 @@ STAGE_MSG = "I woke up sick with a high fever, I'm allergic to penicillin, and I
 @pytest.fixture(autouse=True)
 def clean(monkeypatch):
     m.mission.reset()
-    for k in ("ELEVENLABS_WEBHOOK_SECRET", "ELEVENLABS_STUDENT_AGENT_ID"):
+    for k in ("ELEVENLABS_WEBHOOK_SECRET", "ELEVENLABS_STUDENT_AGENT_ID", "LECTURER_EMAIL"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key")
     monkeypatch.setenv("ELEVENLABS_AGENT_ID", "agent_test")
@@ -200,3 +200,18 @@ def test_email_switched_off_still_completes(client, fake_call, sent, monkeypatch
 ])
 def test_times_in(text, expected):
     assert m.times_in(text) == expected
+
+
+def test_simulated_email_to_default_lecturer(client, fake_call, sent, monkeypatch):
+    monkeypatch.delenv("SMTP_EMAIL")
+    monkeypatch.setenv("LECTURER_EMAIL", "lecturer.default@example.org")
+    q = client.post("/api/chat-triage", json={"message": STAGE_MSG}).json()["confirmation_question"]
+    assert "notify your lecturer" in q
+    body = confirm_body()
+    body.pop("lecturer_email")
+    client.post("/api/confirm-and-execute", json=body)
+    client.post("/api/elevenlabs-webhook", json=webhook_payload("Rendben, fél három."))
+    s = client.get("/api/mission-status").json()
+    assert s["status"] == "COMPLETED" and not sent
+    assert s["email"]["status"] == "simulated" and s["email"]["to"] == "lecturer.default@example.org"
+    assert "Tisztelt Oktató" in s["email"]["body"] and "14:30" in s["email"]["body"]

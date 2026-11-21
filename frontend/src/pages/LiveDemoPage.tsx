@@ -224,6 +224,11 @@ export function LiveDemoPage() {
             {done && mission && <div className="live-result">
               {mission.email.status === 'sent' && <div><Mail size={14} /> Absence email sent to <strong>{mission.email.to}</strong></div>}
               {mission.email.status === 'failed' && <div><Mail size={14} /> Absence email failed: {mission.email.error}</div>}
+              {mission.email.status === 'simulated' && <details className="source-text live-email" open>
+                <summary><Mail size={14} /> Absence email to <strong>{mission.email.to}</strong> <span className="badge badge-info">demo: not actually sent</span></summary>
+                <div className="live-email-subject">{mission.email.subject}</div>
+                <pre>{mission.email.body}</pre>
+              </details>}
               {mission.transcript_excerpt && <details className="source-text"><summary>Call transcript (last lines)</summary><pre>{mission.transcript_excerpt}</pre></details>}
             </div>}
 

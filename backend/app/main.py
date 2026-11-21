@@ -110,13 +110,56 @@ def chat(body: SimpleChatRequest):
                                 agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE,
                                 agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
     except Exception as e:  # never report a failed call as success
-        body = getattr(e, "body", None)
-        code = body.get("code") if isinstance(body, dict) else None
-        if code in ("insufficient_quota", "credit_balance_exhausted"):
-            raise HTTPException(503, "AI service unavailable: the AI account has no credits or quota left")
-        if getattr(e, "status_code", None) == 503 or type(e).__name__ == "APITimeoutError":
-            raise HTTPException(503, "AI service is busy right now, please try again")
-        raise HTTPException(502, f"AI service error: {type(e).__name__}")
+        raise ai_error(e)
+
+
+def ai_error(e: Exception) -> HTTPException:
+    body = getattr(e, "body", None)
+    code = body.get("code") if isinstance(body, dict) else None
+    if code in ("insufficient_quota", "credit_balance_exhausted"):
+        return HTTPException(503, "AI service unavailable: the AI account has no credits or quota left")
+    if getattr(e, "status_code", None) == 503 or type(e).__name__ == "APITimeoutError":
+        return HTTPException(503, "AI service is busy right now, please try again")
+    return HTTPException(502, f"AI service error: {type(e).__name__}")
+
+
+# ---------- Document Help ----------
+
+class ExplainResponse(BaseModel):
+    explanation: str
+    document_type: str
+    dates_found: List[str]
+    truncated: bool
+    language: Literal["en", "hu"]
+    model: str
+    mock: bool
+
+
+@app.post("/api/explain", response_model=ExplainResponse)
+async def explain(file: Optional[UploadFile] = File(None), text: Optional[str] = Form(None),
+                  language: Literal["en", "hu"] = Form("en")):
+    """Explain a document in simple words. Send either a file (pdf/txt) or pasted text.
+    Nothing is stored."""
+    if file is not None and file.filename:
+        content = await file.read()
+        try:
+            ext = documents.validate(file.filename, content)
+        except documents.UploadError as e:
+            raise HTTPException(400, str(e))
+        doc_text, error = documents.extract_text(ext, content)
+        if error:
+            raise HTTPException(422, f"Could not read the document: {error}. Paste the text instead.")
+    elif text and text.strip():
+        doc_text = text
+    else:
+        raise HTTPException(422, "Send a file or paste the document text")
+    if len(doc_text.strip()) < 20:
+        raise HTTPException(422, "The document text is too short to explain")
+    try:
+        return assistant.explain_document(doc_text, language, agent.OPENAI_API_KEY, agent.OPENAI_MODEL,
+                                          agent.MOCK_MODE, agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
+    except Exception as e:
+        raise ai_error(e)
 
 
 # ---------- students / digital twin ----------

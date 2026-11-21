@@ -58,6 +58,37 @@ history.push({ role: "user", content: input }, { role: "assistant", content: r.r
 - **Errors:** `422` = invalid input (empty message, unknown language or topic). `502` = the AI failed, show "try again". `503` = AI unavailable (no credits).
 - Render `reply` keeping line breaks (`white-space: pre-wrap`), or use a small markdown renderer.
 
+## ⭐ Document Help: explain a letter or document
+
+For the "Document Help" card. The student uploads a file (PDF with text, or .txt) **or** pastes the text, and Sera explains it in simple words. Nothing is stored. Photos/scanned PDFs can't be read yet: the API returns `422` asking the student to paste the text.
+
+```ts
+interface ExplainResponse {
+  explanation: string;      // sections: What it is / What it says / Dates and deadlines / What you need to do / Where to check
+  document_type: "passport" | "enrollment_certificate" | "accommodation_document" | "residence_permit" | "official_letter" | "other";
+  dates_found: string[];    // "YYYY-MM-DD", found by the backend (not the AI), good for highlighting
+  truncated: boolean;       // true if the document was too long and only the first part was used
+  language: "en" | "hu";
+  model: string; mock: boolean;
+}
+
+// Upload a file (do NOT set Content-Type yourself)
+const form = new FormData();
+form.append("file", file);             // .pdf or .txt (max 10 MB)
+form.append("language", "en");         // "en" | "hu" = language of the explanation
+const r = await api<ExplainResponse>(`/api/explain`, { method: "POST", body: form });
+
+// Or pasted text
+const form2 = new FormData();
+form2.append("text", pastedText);
+form2.append("language", "hu");
+await api<ExplainResponse>(`/api/explain`, { method: "POST", body: form2 });
+```
+
+- Render `explanation` as markdown (it uses headings/bullets) or with `white-space: pre-wrap`.
+- ID, passport, TAJ, tax and bank numbers are replaced by "[number hidden]".
+- Errors: `400` bad file type/size, `422` nothing sent, text too short, or file unreadable (show the `detail` and a "paste the text" box), `502`/`503` AI problems.
+
 Everything below (documents, missions, impact) is the **extended Sera API**. Use it only if there is time.
 
 ## 2. The demo story (what the screens must tell)
@@ -96,6 +127,7 @@ A hosszabbítási kérelmet legkésőbb 2027.01.10. határidőig nyújtsa be.
 | Change status / task | `POST /api/missions/{id}/status`, `POST /api/missions/{id}/tasks/{taskId}?done=true` |
 | Approvals | `POST /api/students/stu-demo/approvals`, `GET .../approvals`, `POST /api/approvals/{id}/approve` or `/reject` |
 | Chat (main) | `POST /api/chat` and `GET /api/topics` (see "Start here") |
+| Document Help | `POST /api/explain` (see "Document Help") |
 | Chat with the student's context | `POST /api/students/stu-demo/agent/chat` |
 
 ## 4. Types (TypeScript)

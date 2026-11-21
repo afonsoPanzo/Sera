@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from . import actions, agent, assistant, documents, voice  # noqa: E402
+from .mission import router as mission_router  # noqa: E402
 from .impact import analyze  # noqa: E402
 from .models import (  # noqa: E402
     MISSION_TRANSITIONS, ApprovalRequest, ApprovalStatus, Document, Fact, ImpactReport, Mission,
@@ -30,6 +31,8 @@ from .store import DEMO_STUDENT_ID, new_id, store  # noqa: E402
 
 app = FastAPI(title="Sera", version="0.1.0",
               description="Administrative intelligence for students. Demo student id: " + DEMO_STUDENT_ID)
+
+app.include_router(mission_router)
 
 app.add_middleware(
     CORSMiddleware,

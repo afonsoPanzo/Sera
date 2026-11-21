@@ -13,7 +13,7 @@ import {
   ShieldAlert,
   Sparkles,
 } from 'lucide-react';
-import logoWhite from '../assets/sera-logo-white.png';
+import { SeraLogo, SeraMark } from './Logo';
 
 export type PageKey = 'live' | 'dashboard' | 'documents' | 'missions' | 'risks' | 'approvals' | 'assistant';
 
@@ -42,20 +42,24 @@ export function Shell({
   onNavigate,
   onRefresh,
   refreshing,
+  studentName,
   children,
 }: {
   page: PageKey;
   onNavigate: (page: PageKey) => void;
   onRefresh: () => void;
   refreshing: boolean;
+  studentName?: string | null;
   children: ReactNode;
 }) {
+  const displayName = studentName || 'Demo student';
+  const initials = displayName.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand-lockup" onClick={() => onNavigate('dashboard')} aria-label="Sera home">
-          <span className="brand-mark"><img src="/favicon.png" alt="" /></span>
-          <span className="brand-text"><img className="brand-wordmark" src={logoWhite} alt="Sera" /><small>STUDENT COMMAND CENTRE</small></span>
+          <span className="brand-mark"><SeraMark size={40} /></span>
+          <span className="brand-text"><SeraLogo tagline="STUDENT CONCIERGE" /></span>
         </button>
 
         <div className="workspace-pill"><span className="workspace-dot" /> Demo workspace <ChevronDown size={14} /></div>
@@ -86,8 +90,8 @@ export function Shell({
             <button onClick={() => onNavigate('assistant')}>Ask your assistant <ArrowUpRight size={14} /></button>
           </div>
           <div className="profile-row">
-            <div className="avatar avatar-small">S</div>
-            <div className="profile-copy"><strong>Sera</strong><span>Student account</span></div>
+            <div className="avatar avatar-small">{initials}</div>
+            <div className="profile-copy"><strong>{displayName}</strong><span>Demo student</span></div>
             <Command size={15} className="profile-more" />
           </div>
         </div>
@@ -101,7 +105,7 @@ export function Shell({
             <button className="icon-button" title="Refresh data" onClick={onRefresh} disabled={refreshing}>
               <RefreshCw size={17} className={refreshing ? 'spin' : ''} />
             </button>
-            <div className="topbar-avatar">S</div>
+            <div className="topbar-avatar" title={displayName}>{initials}</div>
           </div>
         </header>
         <div className="page-content">{children}</div>

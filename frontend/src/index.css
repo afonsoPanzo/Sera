@@ -545,12 +545,31 @@ h1 { margin: 0; color: #25263d; font: 800 30px/1.2 Manrope, sans-serif; letter-s
 .action-chip.action-email_draft { background: var(--purple); border-color: var(--purple); color: #fff; }
 .action-chip.action-email_draft:hover { background: var(--purple-dark); }
 
-/* New Sera logo */
-.brand-mark { display: none; background: #fff; box-shadow: 0 7px 15px rgba(10, 10, 40, .25); }
-.brand-mark img { width: 24px; height: 24px; object-fit: contain; }
-.brand-text { display: flex; flex-direction: column; }
-.brand-wordmark { height: 30px; width: auto; display: block; }
+/* Sera logo (vector) */
+.brand-mark { display: none; width: auto; height: auto; background: none; box-shadow: none; border-radius: 0; }
+.brand-text { display: block; font: inherit; letter-spacing: normal; }
+.sera-logo { display: inline-flex; align-items: center; gap: 11px; }
+.sera-mark { display: block; flex: 0 0 auto; filter: drop-shadow(0 6px 12px rgba(115, 50, 233, .35)); }
+.sera-logo-text { display: flex; flex-direction: column; gap: 4px; }
+.sera-wordmark, .brand-text .sera-wordmark { font: 800 26px/0.9 Manrope, 'Segoe UI', sans-serif; letter-spacing: -1.3px; color: #fff; }
+.sera-logo-text small { color: #8a8cb0; font: 700 7.5px 'DM Sans', sans-serif; letter-spacing: 1.4px; }
 @media (max-width: 850px) { .brand-mark { display: grid; } .brand-text { display: none; } }
+
+/* Sidebar: never cut off on short screens */
+.sidebar { overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 6px; }
+.sidebar-bottom { padding-top: 16px; }
+@media (max-height: 820px) {
+  .sidebar { padding-top: 22px; }
+  .side-nav { gap: 16px; }
+  .nav-item { padding-top: 9px; padding-bottom: 9px; }
+  .sidebar-tip { display: none; }
+  .workspace-pill { margin: 22px 3px 18px; }
+}
+@media (max-height: 640px) {
+  .workspace-pill { display: none; }
+}
 
 /* ---------- Live demo ---------- */
 .live-setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

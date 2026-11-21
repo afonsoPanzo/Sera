@@ -544,3 +544,10 @@ h1 { margin: 0; color: #25263d; font: 800 30px/1.2 Manrope, sans-serif; letter-s
 .action-chip.action-call:hover { background: #fff3f1; }
 .action-chip.action-email_draft { background: var(--purple); border-color: var(--purple); color: #fff; }
 .action-chip.action-email_draft:hover { background: var(--purple-dark); }
+
+/* New Sera logo */
+.brand-mark { display: none; background: #fff; box-shadow: 0 7px 15px rgba(10, 10, 40, .25); }
+.brand-mark img { width: 24px; height: 24px; object-fit: contain; }
+.brand-text { display: flex; flex-direction: column; }
+.brand-wordmark { height: 30px; width: auto; display: block; }
+@media (max-width: 850px) { .brand-mark { display: grid; } .brand-text { display: none; } }

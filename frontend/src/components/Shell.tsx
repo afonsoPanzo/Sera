@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import {
   ArrowUpRight,
   Bell,
-  BookOpen,
   CheckSquare,
   ChevronDown,
   Command,
@@ -13,6 +12,7 @@ import {
   ShieldAlert,
   Sparkles,
 } from 'lucide-react';
+import logoWhite from '../assets/sera-logo-white.png';
 
 export type PageKey = 'dashboard' | 'documents' | 'missions' | 'risks' | 'approvals' | 'assistant';
 
@@ -51,8 +51,8 @@ export function Shell({
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand-lockup" onClick={() => onNavigate('dashboard')} aria-label="Sera home">
-          <span className="brand-mark"><BookOpen size={20} strokeWidth={2.2} /></span>
-          <span className="brand-text">Sera<small>STUDENT COMMAND CENTRE</small></span>
+          <span className="brand-mark"><img src="/favicon.png" alt="" /></span>
+          <span className="brand-text"><img className="brand-wordmark" src={logoWhite} alt="Sera" /><small>STUDENT COMMAND CENTRE</small></span>
         </button>
 
         <div className="workspace-pill"><span className="workspace-dot" /> Demo workspace <ChevronDown size={14} /></div>

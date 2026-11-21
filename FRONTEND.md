@@ -89,6 +89,24 @@ await api<ExplainResponse>(`/api/explain`, { method: "POST", body: form2 });
 - ID, passport, TAJ, tax and bank numbers are replaced by "[number hidden]".
 - Errors: `400` bad file type/size, `422` nothing sent, text too short, or file unreadable (show the `detail` and a "paste the text" box), `502`/`503` AI problems.
 
+## 🔊 Voice: read a Sera answer aloud (ElevenLabs)
+
+`POST /api/speak` with JSON `{ "text": reply, "language": "en" | "hu" }` returns an **MP3** (`audio/mpeg`). Use it for a 🔊 button on each Sera message. Markdown and links are stripped before reading; long replies are cut at about 1,500 characters.
+
+```ts
+async function playReply(text: string, language: "en" | "hu") {
+  const res = await fetch(`${API}/api/speak`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language }),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail);   // 503 = voice not configured / busy
+  const url = URL.createObjectURL(await res.blob());
+  new Audio(url).play();
+}
+```
+
+For the microphone (student speaks instead of typing), use the browser's Web Speech API (`webkitSpeechRecognition`, `lang = "hu-HU"` or `"en-US"`) and send the text to `/api/chat`.
+
 Everything below (documents, missions, impact) is the **extended Sera API**. Use it only if there is time.
 
 ## 2. The demo story (what the screens must tell)

@@ -16,11 +16,11 @@ from dotenv import load_dotenv
 # Explicit path: under `uvicorn --reload` the default lookup uses the cwd, not backend/.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from . import agent, assistant, documents  # noqa: E402
+from . import agent, assistant, documents, voice  # noqa: E402
 from .impact import analyze  # noqa: E402
 from .models import (  # noqa: E402
     MISSION_TRANSITIONS, ApprovalRequest, ApprovalStatus, Document, Fact, ImpactReport, Mission,
@@ -160,6 +160,25 @@ async def explain(file: Optional[UploadFile] = File(None), text: Optional[str] =
                                           agent.MOCK_MODE, agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
     except Exception as e:
         raise ai_error(e)
+
+
+# ---------- Voice (ElevenLabs text-to-speech) ----------
+
+class SpeakRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000, description="Usually a Sera reply")
+    language: Literal["en", "hu"] = "en"
+
+
+@app.post("/api/speak", response_class=Response,
+          responses={200: {"content": {"audio/mpeg": {}}, "description": "MP3 audio"}})
+def speak(body: SpeakRequest):
+    try:
+        audio = voice.synthesize(body.text, body.language)
+    except voice.VoiceNotConfigured as e:
+        raise HTTPException(503, str(e))
+    except voice.VoiceError as e:
+        raise HTTPException(e.status, e.detail)
+    return Response(content=audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
 # ---------- students / digital twin ----------

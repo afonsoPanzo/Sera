@@ -107,12 +107,13 @@ def chat(body: SimpleChatRequest):
     try:
         return assistant.answer(body.message, body.language, body.topic,
                                 [m.model_dump() for m in body.history],
-                                agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE)
+                                agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE,
+                                agent.OPENAI_BASE_URL)
     except Exception as e:  # never report a failed call as success
         body = getattr(e, "body", None)
         code = body.get("code") if isinstance(body, dict) else None
         if code in ("insufficient_quota", "credit_balance_exhausted"):
-            raise HTTPException(503, "AI service unavailable: the OpenAI account has no credits")
+            raise HTTPException(503, "AI service unavailable: the AI account has no credits or quota left")
         raise HTTPException(502, f"AI service error: {type(e).__name__}")
 
 

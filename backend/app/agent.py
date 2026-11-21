@@ -16,6 +16,8 @@ from .store import Store
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+# Any OpenAI-compatible provider (e.g. Gemini free tier, Groq). Empty = OpenAI.
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL") or None
 MOCK_MODE = os.getenv("MOCK_MODE", "0") == "1" or not OPENAI_API_KEY
 MAX_HISTORY = 10
 
@@ -85,7 +87,7 @@ def chat(store: Store, student_id: str, message: str, history: list[dict], langu
 
     from openai import OpenAI  # imported lazily so tests never need it
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT.format(language_rule=LANGUAGE_RULES.get(language, LANGUAGE_RULES["auto"]))},
         {"role": "system", "content": "STUDENT CONTEXT:\n" + json.dumps(context, ensure_ascii=False)},

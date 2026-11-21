@@ -99,7 +99,7 @@ def load_knowledge() -> str:
         return ""
     parts = []
     for f in sorted(KNOWLEDGE_DIR.glob("*.md")):
-        if f.name.lower() in ("readme.md", "test-questions.md"):
+        if f.name.lower() in ("readme.md", "test-questions.md", "answers-report.md"):
             continue
         text = f.read_text(encoding="utf-8").strip()
         if text:
@@ -125,7 +125,7 @@ def mock_reply(message: str, language: Language, topic: Topic) -> str:
 
 
 def answer(message: str, language: str, topic: Topic, history: list[dict],
-           api_key: str, model: str, mock: bool) -> dict:
+           api_key: str, model: str, mock: bool, base_url: str | None = None) -> dict:
     lang: Language = detect_language(message) if language == "auto" else language  # type: ignore[assignment]
     if mock:
         return {"reply": mock_reply(message, lang, topic), "language": lang, "topic": topic,
@@ -133,7 +133,7 @@ def answer(message: str, language: str, topic: Topic, history: list[dict],
 
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=api_key, base_url=base_url)
     messages = [{"role": "system", "content": build_system_prompt(lang, topic)},
                 *history[-MAX_HISTORY:],
                 {"role": "user", "content": message}]

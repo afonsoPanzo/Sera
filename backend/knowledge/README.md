@@ -24,4 +24,14 @@ Put verified information here. Every `*.md` file in this folder (except this REA
 
 ## The 10 test questions
 
-Put the 10 realistic questions and their verified answers in `test-questions.md`, using the same format. Person 1 uses them to check the AI's answers. That file is excluded from the prompt.
+Put the 10 realistic questions and their verified answers in `test-questions.md`. That file is excluded from the prompt. One block per question: the heading is the question, then `topic:` (healthcare, university, immigration, translation or general), optional `language:` (en or hu), then the expected answer and its source:
+
+```markdown
+## How do I get a TAJ card?
+topic: healthcare
+language: en
+Key facts the answer must contain: ...
+Source: https://... (checked 2026-11-21)
+```
+
+Person 1 runs them against the live AI with `.venv/Scripts/python backend/scripts/check_answers.py`. That writes `answers-report.md` here (not committed), with the expected answer and Sera's answer side by side for review.

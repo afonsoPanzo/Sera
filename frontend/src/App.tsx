@@ -10,6 +10,7 @@ import { MissionsPage } from './pages/MissionsPage';
 import { RisksPage } from './pages/RisksPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
 import { AssistantPage } from './pages/AssistantPage';
+import { VoiceWidget } from './components/VoiceWidget';
 import './index.css';
 
 export default function App() {
@@ -73,6 +74,7 @@ export default function App() {
     <Shell page={page} onNavigate={setPage} onRefresh={() => void refreshAll()} refreshing={refreshing}>
       {loadError && <div className="global-api-alert"><Notice tone="warning"><div><strong>Some workspace data could not be loaded.</strong><p>{loadError}</p><Button size="sm" variant="secondary" onClick={() => void refreshAll()} disabled={refreshing}>Retry requests</Button></div></Notice></div>}
       {loading ? <div className="initial-loading"><LoadingState label="Connecting to your Sera workspace…" /><span><AlertCircle size={14} /> Backend expected at {import.meta.env.VITE_API_URL || 'http://localhost:8000'}</span></div> : renderPage()}
+      <VoiceWidget />
     </Shell>
   );
 }

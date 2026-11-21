@@ -188,6 +188,7 @@ export interface SeraChatReply {
   topic: Topic;
   model: string;
   mock: boolean;
+  actions?: SeraAction[];
 }
 
 export interface ExplainResponse {
@@ -198,4 +199,12 @@ export interface ExplainResponse {
   language: 'en' | 'hu';
   model: string;
   mock: boolean;
+  actions?: SeraAction[];
+}
+
+export interface SeraAction {
+  type: 'email_draft' | 'email' | 'call' | 'map' | 'link' | 'copy';
+  label: string;
+  href?: string | null;   // mailto:, tel:, https://
+  text?: string | null;   // for "copy"
 }

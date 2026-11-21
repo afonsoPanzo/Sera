@@ -107,6 +107,25 @@ async function playReply(text: string, language: "en" | "hu") {
 
 For the microphone (student speaks instead of typing), use the browser's Web Speech API (`webkitSpeechRecognition`, `lang = "hu-HU"` or `"en-US"`) and send the text to `/api/chat`.
 
+## Proactive actions (buttons under each answer)
+
+`/api/chat` and `/api/explain` also return `actions`: buttons the UI offers under the reply. They are detected by the backend in the reply text (never invented by the AI) and **nothing is executed automatically**: they only open the student's own email app, phone, map or browser.
+
+```ts
+interface SeraAction {
+  type: "email_draft" | "email" | "call" | "map" | "link" | "copy";
+  label: string;          // already in the answer's language
+  href?: string | null;   // mailto: (with Hungarian subject/body for drafts), tel:, https://maps..., https://...
+  text?: string | null;   // for "copy": the Hungarian message
+}
+```
+
+Render each as a link (`<a href>`; open `map`/`link` in a new tab) except `copy` (clipboard). The frontend uses lucide icons: MailPlus, Mail, Phone, MapPin, ExternalLink, Copy. See `frontend/src/components/ActionBar.tsx`.
+
+## ElevenLabs voice agent widget
+
+Set `VITE_ELEVENLABS_AGENT_ID=<agent id>` in `frontend/.env` and restart Vite: a floating call button appears in the bottom-right corner on every page (`frontend/src/components/VoiceWidget.tsx`). Empty = hidden. In the ElevenLabs agent's Security tab, add the site host to the allowlist.
+
 Everything below (documents, missions, impact) is the **extended Sera API**. Use it only if there is time.
 
 ## 2. The demo story (what the screens must tell)

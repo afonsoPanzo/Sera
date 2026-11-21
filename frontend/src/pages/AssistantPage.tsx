@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Bot, GraduationCap, HeartPulse, Languages, Landmark, MessageCircle, RotateCcw, Sparkles, UserRound } from 'lucide-react';
-import type { ChatHistoryItem, ChatLanguage, Topic, TopicInfo } from '../api/types';
+import type { ChatHistoryItem, ChatLanguage, SeraAction, Topic, TopicInfo } from '../api/types';
+import { ActionBar } from '../components/ActionBar';
 import { endpoints } from '../api/client';
 import { Button, Notice } from '../components/UI';
 import { RichText, SpeakButton } from '../components/RichText';
@@ -11,6 +12,7 @@ interface VisibleMessage extends ChatHistoryItem {
   model?: string;
   language?: 'en' | 'hu';
   topic?: Topic;
+  actions?: SeraAction[];
 }
 
 const WELCOME: Record<'en' | 'hu', string> = {
@@ -69,7 +71,7 @@ export function AssistantPage() {
       setMockMode(r.mock);
       setMessages((current) => [...current, {
         id: `assistant-${Date.now()}`, role: 'assistant', content: r.reply,
-        mock: r.mock, model: r.model, language: r.language, topic: r.topic,
+        mock: r.mock, model: r.model, language: r.language, topic: r.topic, actions: r.actions,
       }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sera could not respond. Please try again.');
@@ -122,6 +124,7 @@ export function AssistantPage() {
               <div className="chat-message-avatar">{message.role === 'assistant' ? <Bot size={17} /> : <UserRound size={17} />}</div>
               <div className="chat-message-content">
                 <div className="chat-message-bubble">{message.role === 'assistant' ? <RichText text={message.content} /> : message.content}</div>
+                {message.role === 'assistant' && <ActionBar actions={message.actions} />}
                 {message.role === 'assistant' && message.id !== 'welcome' && <div className="chat-message-meta">
                   <SpeakButton text={message.content} language={message.language ?? 'en'} />
                   <span>{message.mock ? 'Mock response' : message.model}</span>

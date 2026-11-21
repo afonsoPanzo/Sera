@@ -535,3 +535,12 @@ h1 { margin: 0; color: #25263d; font: 800 30px/1.2 Manrope, sans-serif; letter-s
   .topic-chips { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
   .topic-chips button { flex: 0 0 auto; }
 }
+
+/* Proactive action buttons */
+.action-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.action-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #dcd8f7; background: #fff; color: var(--purple-dark); border-radius: 8px; padding: 5px 9px; font-size: 9.5px; font-weight: 700; text-decoration: none; line-height: 1.2; transition: .15s ease; }
+.action-chip:hover { background: #f4f2ff; border-color: #c4bdf2; }
+.action-chip.action-call { color: #b5483e; border-color: #f2d3cf; }
+.action-chip.action-call:hover { background: #fff3f1; }
+.action-chip.action-email_draft { background: var(--purple); border-color: var(--purple); color: #fff; }
+.action-chip.action-email_draft:hover { background: var(--purple-dark); }

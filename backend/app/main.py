@@ -20,7 +20,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile  # 
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from . import agent, assistant, documents, voice  # noqa: E402
+from . import actions, agent, assistant, documents, voice  # noqa: E402
 from .impact import analyze  # noqa: E402
 from .models import (  # noqa: E402
     MISSION_TRANSITIONS, ApprovalRequest, ApprovalStatus, Document, Fact, ImpactReport, Mission,
@@ -88,12 +88,21 @@ class SimpleChatRequest(BaseModel):
     history: List[ChatMessage] = Field(default_factory=list, description="Previous turns, oldest first")
 
 
+class Action(BaseModel):
+    type: Literal["email_draft", "email", "call", "map", "link", "copy"]
+    label: str
+    href: Optional[str] = None   # mailto:, tel:, https://
+    text: Optional[str] = None   # for "copy"
+
+
 class SimpleChatResponse(BaseModel):
     reply: str
     language: Literal["en", "hu"]
     topic: str
     model: str
     mock: bool
+    actions: List[Action] = Field(default_factory=list,
+                                  description="Buttons the UI can offer; nothing is executed by the server")
 
 
 @app.get("/api/topics")
@@ -105,12 +114,14 @@ def topics():
 @app.post("/api/chat", response_model=SimpleChatResponse)
 def chat(body: SimpleChatRequest):
     try:
-        return assistant.answer(body.message, body.language, body.topic,
-                                [m.model_dump() for m in body.history],
-                                agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE,
-                                agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
+        result = assistant.answer(body.message, body.language, body.topic,
+                                  [m.model_dump() for m in body.history],
+                                  agent.OPENAI_API_KEY, agent.OPENAI_MODEL, agent.MOCK_MODE,
+                                  agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
     except Exception as e:  # never report a failed call as success
         raise ai_error(e)
+    result["actions"] = actions.extract_actions(result["reply"], result["topic"], result["language"])
+    return result
 
 
 def ai_error(e: Exception) -> HTTPException:
@@ -133,6 +144,7 @@ class ExplainResponse(BaseModel):
     language: Literal["en", "hu"]
     model: str
     mock: bool
+    actions: List[Action] = Field(default_factory=list)
 
 
 @app.post("/api/explain", response_model=ExplainResponse)
@@ -156,10 +168,12 @@ async def explain(file: Optional[UploadFile] = File(None), text: Optional[str] =
     if len(doc_text.strip()) < 20:
         raise HTTPException(422, "The document text is too short to explain")
     try:
-        return assistant.explain_document(doc_text, language, agent.OPENAI_API_KEY, agent.OPENAI_MODEL,
-                                          agent.MOCK_MODE, agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
+        result = assistant.explain_document(doc_text, language, agent.OPENAI_API_KEY, agent.OPENAI_MODEL,
+                                            agent.MOCK_MODE, agent.OPENAI_BASE_URL, agent.OPENAI_FALLBACK_MODELS)
     except Exception as e:
         raise ai_error(e)
+    result["actions"] = actions.extract_actions(result["explanation"], "explain", language)
+    return result
 
 
 # ---------- Voice (ElevenLabs text-to-speech) ----------

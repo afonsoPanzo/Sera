@@ -5,6 +5,7 @@ import { endpoints } from '../api/client';
 import { formatDate, formatLabel } from '../utils';
 import { Badge, Button, Notice, Panel } from './UI';
 import { RichText, SpeakButton } from './RichText';
+import { ActionBar } from './ActionBar';
 
 function ExplanationView({ result }: { result: ExplainResponse }) {
   return (
@@ -16,6 +17,7 @@ function ExplanationView({ result }: { result: ExplainResponse }) {
       </div>
       {result.truncated && <Notice tone="warning">The document was long, so only the first part was explained.</Notice>}
       <RichText text={result.explanation} />
+      <ActionBar actions={result.actions} />
       <p className="subtle-footnote">{result.mock ? 'Mock explanation (no AI key configured).' : `Explained by ${result.model}.`} Sera is not a lawyer: confirm important steps with the sender or your international office.</p>
     </div>
   );

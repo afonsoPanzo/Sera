@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { ApprovalRequest, Deadline, ImpactReport, Mission, StudentDocument, Twin } from './api/types';
-import { endpoints } from './api/client';
+import { API_BASE_URL, endpoints } from './api/client';
 import { Shell, type PageKey } from './components/Shell';
 import { Button, LoadingState, Notice } from './components/UI';
 import { DashboardPage } from './pages/DashboardPage';
@@ -75,7 +75,7 @@ export default function App() {
   return (
     <Shell page={page} onNavigate={setPage} onRefresh={() => void refreshAll()} refreshing={refreshing} studentName={student?.name}>
       {loadError && <div className="global-api-alert"><Notice tone="warning"><div><strong>Some workspace data could not be loaded.</strong><p>{loadError}</p><Button size="sm" variant="secondary" onClick={() => void refreshAll()} disabled={refreshing}>Retry requests</Button></div></Notice></div>}
-      {loading ? <div className="initial-loading"><LoadingState label="Connecting to your Sera workspace…" /><span><AlertCircle size={14} /> Backend expected at {import.meta.env.VITE_API_URL || 'http://localhost:8000'}</span></div> : renderPage()}
+      {loading ? <div className="initial-loading"><LoadingState label="Connecting to your Sera workspace…" /><span><AlertCircle size={14} /> Backend expected at {API_BASE_URL}</span></div> : renderPage()}
       <VoiceWidget />
     </Shell>
   );

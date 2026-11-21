@@ -15,7 +15,22 @@ import type {
   MissionLive,
 } from './types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+// Works on this PC (localhost) and on phones/laptops opening http://<PC-IP>:5173:
+// a localhost API URL is rewritten to the host the page was loaded from.
+function resolveApiBase(): string {
+  const configured = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+  const pageHost = window.location.hostname;
+  const isLocal = (h: string) => h === 'localhost' || h === '127.0.0.1';
+  if (!configured) return `${window.location.protocol}//${pageHost}:8000`;
+  try {
+    const url = new URL(configured);
+    if (isLocal(url.hostname) && !isLocal(pageHost)) url.hostname = pageHost;
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return configured.replace(/\/$/, '');
+  }
+}
+const API_BASE_URL = resolveApiBase();
 export const STUDENT_ID = 'stu-demo';
 
 function readableError(data: unknown, fallback: string): string {

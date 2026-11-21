@@ -231,6 +231,7 @@ export interface MissionLive {
   student: Partial<TriageResult>;
   contacts: { doctor_phone?: string; student_phone?: string | null; lecturer_email?: string | null; preferred_window?: string };
   conversation_id: string | null;
+  call?: { status: string | null; result: string | null };
   appointment_time: string | null;
   appointment_time_source: 'data_collection' | 'transcript' | 'summary' | 'fallback' | 'manual' | null;
   transcript_excerpt: string | null;

@@ -211,9 +211,9 @@ export function LiveDemoPage() {
         <section className="live-col">
           <Panel title="3. Live mission" subtitle="Updates automatically from the call.">
             <div className={`live-status live-status-${(status || 'IDLE').toLowerCase()}`}>
-              {calling && <><span className="pulse-dot" /><div><strong>Calling the doctor in Hungarian…</strong><span>{mission?.contacts.doctor_phone}</span></div></>}
+              {calling && <><span className="pulse-dot" /><div><strong>{mission?.call?.status === 'in-progress' ? 'Sera is talking to the doctor in Hungarian…' : 'Calling the doctor in Hungarian…'}</strong><span>{mission?.contacts.doctor_phone}{mission?.call?.status ? ` · ${mission.call.status}` : ''}</span></div></>}
               {status === 'SENDING_EMAIL' && <><Clock size={20} /><div><strong>Call finished, wrapping up…</strong></div></>}
-              {status === 'CALL_FAILED' && <><PhoneOff size={20} /><div><strong>The call could not be started</strong><span>Check the reason below, or use the fallback.</span></div></>}
+              {status === 'CALL_FAILED' && <><PhoneOff size={20} /><div><strong>The call did not go through</strong><span>{mission?.events[mission.events.length - 1]?.message ?? 'Try again, or use the fallback.'}</span></div></>}
               {done && <><CalendarCheck size={22} /><div>
                 <strong>Appointment today at {mission?.appointment_time}</strong>
                 <span>{SOURCE_LABEL[mission?.appointment_time_source || ''] || ''}</span>

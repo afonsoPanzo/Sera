@@ -215,3 +215,65 @@ def test_simulated_email_to_default_lecturer(client, fake_call, sent, monkeypatc
     assert s["status"] == "COMPLETED" and not sent
     assert s["email"]["status"] == "simulated" and s["email"]["to"] == "lecturer.default@example.org"
     assert "Tisztelt Oktató" in s["email"]["body"] and "14:30" in s["email"]["body"]
+
+
+class FakeGet:
+    """httpx.AsyncClient with both post (outbound call) and get (conversation status)."""
+    conv = {}
+
+    def __init__(self, **kw):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    async def post(self, url, headers, json):
+        return httpx.Response(200, json={"success": True, "conversation_id": "conv_poll", "callSid": "CA9"})
+
+    async def get(self, url, headers):
+        return httpx.Response(200, json=FakeGet.conv)
+
+
+def start_polled_call(client, monkeypatch, conv):
+    FakeGet.conv = conv
+    monkeypatch.setattr(httpx, "AsyncClient", FakeGet)
+    assert client.post("/api/confirm-and-execute", json=confirm_body()).status_code == 200
+    m.mission._last_poll = 0
+
+
+def test_data_collection_matched_by_name():
+    payload = {"data": {"analysis": {"data_collection_results": {
+        "aitem_9401": {"data_collection_id": "aitem_9401", "name": "appointment_time", "value": "14:45"}}}}}
+    assert m.extract_appointment(payload)[:2] == ("14:45 CET", "data_collection")
+
+
+def test_poll_busy_marks_call_failed(client, monkeypatch, sent):
+    start_polled_call(client, monkeypatch, {"status": "initiated", "metadata": {"phone_call": {"call_result": "busy"}}})
+    s = client.get("/api/mission-status").json()
+    assert s["status"] == "CALL_FAILED" and "busy" in s["events"][-1]["message"]
+
+
+def test_poll_done_completes_without_webhook(client, monkeypatch, sent):
+    start_polled_call(client, monkeypatch, {"status": "done", "metadata": {"phone_call": {"call_result": "answered"}},
+                                            "transcript": [{"role": "user", "message": "Rendben, fél három."}],
+                                            "analysis": {"data_collection_results": {}}})
+    s = client.get("/api/mission-status").json()
+    assert s["status"] == "COMPLETED" and s["appointment_time"] == "14:30 CET"
+    # a late webhook for the same call must not complete it twice
+    r = client.post("/api/elevenlabs-webhook", json=webhook_payload("15:00", conv="conv_poll")).json()
+    assert r.get("ignored") and client.get("/api/mission-status").json()["appointment_time"] == "14:30 CET"
+
+
+def test_poll_in_progress_keeps_calling(client, monkeypatch, sent):
+    start_polled_call(client, monkeypatch, {"status": "in-progress", "metadata": {"phone_call": {"call_result": "answered"}}})
+    s = client.get("/api/mission-status").json()
+    assert s["status"] == "CALLING_DOCTOR" and s["call"]["status"] == "in-progress"
+
+
+def test_webhook_without_screen_call_is_logged(client, sent):
+    r = client.post("/api/elevenlabs-webhook", json=webhook_payload("15:00", conv="conv_other")).json()
+    assert r["ignored"].startswith("no active call")
+    assert "no call was started from this screen" in client.get("/api/mission-status").json()["events"][-1]["message"]

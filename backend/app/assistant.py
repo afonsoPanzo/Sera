@@ -157,7 +157,7 @@ def _complete(messages: list[dict], api_key: str, model: str, base_url: str | No
     """Call the main model, falling back to the next one on overload/timeout. Returns (text, model)."""
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key, base_url=base_url, timeout=25, max_retries=0)
+    client = OpenAI(api_key=api_key, base_url=base_url, timeout=15, max_retries=0)
     models = [model, *[m for m in (fallback_models or []) if m and m != model]]
     last: Exception | None = None
     for m in models:

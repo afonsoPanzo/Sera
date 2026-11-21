@@ -62,7 +62,17 @@ class MissionState:
                 "appointment_time": None, "appointment_time_source": None, "transcript_excerpt": None,
                 "email": {"status": "not_sent", "to": None, "sent_at": None, "error": None},
                 "student_callback": {"status": "not_requested"}, "events": [],
+                "call": {"status": None, "result": None}, "completing": False,
             }
+            self._last_poll = 0.0
+
+    def claim_completion(self) -> bool:
+        """True exactly once per mission: webhook and status polling can't both finish it."""
+        with self._lock:
+            if self.data.get("completing") or self.data["status"] in ("SENDING_EMAIL", "COMPLETED"):
+                return False
+            self.data["completing"] = True
+            return True
 
     def update(self, event: str | None = None, **changes: Any) -> None:
         with self._lock:
@@ -234,7 +244,9 @@ async def confirm_and_execute(body: ConfirmRequest):
     lecturer_email = body.lecturer_email or env("LECTURER_EMAIL") or None
     variables = {"student_name": body.student_name, "symptoms": body.symptoms,
                  "allergies": body.allergies, "preferred_window": body.preferred_window}
+    mission._last_poll = time.time()
     mission.update("Student gave permission. Calling the doctor in Hungarian…", status="CALLING_DOCTOR",
+                   completing=False, call={"status": "starting", "result": None},
                    student={"student_name": body.student_name, "course_name": body.course_name,
                             "symptoms": body.symptoms, "allergies": body.allergies},
                    contacts={"doctor_phone": doctor, "student_phone": student_phone,
@@ -297,7 +309,8 @@ def extract_appointment(payload: dict) -> tuple[str, str, str]:
     data = payload.get("data", payload) if isinstance(payload, dict) else {}
     analysis = data.get("analysis") or {}
     for key, item in (analysis.get("data_collection_results") or {}).items():
-        if re.search(r"time|idopont|időpont|appointment", key, re.I):
+        name = item.get("name", "") if isinstance(item, dict) else ""
+        if re.search(r"time|idopont|időpont|appointment", f"{key} {name}", re.I):
             value = item.get("value") if isinstance(item, dict) else item
             if value:
                 ts = times_in(str(value))
@@ -444,9 +457,13 @@ async def elevenlabs_webhook(request: Request, background: BackgroundTasks):
     if snap["status"] in ("COMPLETED", "SENDING_EMAIL"):
         return {"ok": True, "ignored": "mission already processed"}
     if snap["conversation_id"] and conv and conv != snap["conversation_id"]:
+        mission.update(f"Webhook received for another call ({conv}): ignored.")
         return {"ok": True, "ignored": "different conversation"}
     if snap["status"] not in ("CALLING_DOCTOR", "CALL_FAILED"):
+        mission.update(f"Webhook received but no call was started from this screen ({conv}): ignored.")
         return {"ok": True, "ignored": f"no active call (status {snap['status']})"}
+    if not mission.claim_completion():
+        return {"ok": True, "ignored": "mission already being completed"}
     background.add_task(complete_mission, payload, "ElevenLabs webhook")
     return {"ok": True}
 
@@ -468,12 +485,52 @@ async def simulate_call_complete(body: SimulateRequest):
                                                   "course_name": body.course_name}.items() if v})
     msg = f"Az időpont rendben, ma {body.appointment_time} órakor várjuk." if body.appointment_time else ""
     payload = {"type": "post_call_transcription", "data": {"transcript": [{"role": "user", "message": msg}] if msg else []}}
+    mission.update(completing=True)
     await complete_mission(payload, "simulated")
     return mission.snapshot()
 
 
+FAILED_RESULTS = {"busy": "the doctor's phone was busy (or the call was rejected)",
+                  "no-answer": "nobody answered", "no_answer": "nobody answered",
+                  "failed": "the call failed", "canceled": "the call was cancelled"}
+
+
+async def poll_call() -> None:
+    """While calling, ask ElevenLabs about the call. Covers busy / no answer / a webhook that never arrives."""
+    snap = mission.snapshot()
+    conv = snap.get("conversation_id")
+    if snap["status"] != "CALLING_DOCTOR" or not conv or not env("ELEVENLABS_API_KEY"):
+        return
+    now = time.time()
+    if now - mission._last_poll < 4:
+        return
+    mission._last_poll = now
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            r = await client.get(f"https://api.elevenlabs.io/v1/convai/conversations/{conv}",
+                                 headers={"xi-api-key": env("ELEVENLABS_API_KEY")})
+        if r.status_code != 200:
+            return
+        d = r.json()
+    except Exception:
+        return
+    status = d.get("status")
+    result = ((d.get("metadata") or {}).get("phone_call") or {}).get("call_result")
+    if (status, result) != (snap["call"].get("status"), snap["call"].get("result")):
+        mission.update(call={"status": status, "result": result})
+    if status == "done":
+        if mission.claim_completion():
+            await complete_mission({"type": "post_call_transcription", "data": d}, "call status check")
+    elif status == "failed" or result in FAILED_RESULTS:
+        reason = FAILED_RESULTS.get(result, "the call failed")
+        mission.update(f"Call not completed: {reason}. Try again or use the fallback.", status="CALL_FAILED")
+
+
 @router.get("/mission-status")
-def mission_status():
+async def mission_status():
+    await poll_call()
     return mission.snapshot()
 
 
